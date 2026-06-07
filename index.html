@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#09090b"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="JEE Planner"/>
+<meta name="description" content="JEE Main + Advanced Smart Daily Planner 2026-27"/>
+<title>JEE Planner</title>
+
+<!-- PWA Manifest inline -->
+<script>
+const manifestData = {
+  name: "JEE Smart Planner",
+  short_name: "JEE Planner",
+  description: "JEE Main + Advanced Daily Study Planner 2026-27",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#09090b",
+  theme_color: "#09090b",
+  orientation: "portrait",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%2309090b'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%2309090b'/%3E%3Ctext x='256' y='360' font-size='280' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type:'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+document.addEventListener('DOMContentLoaded', () => {
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = manifestURL;
+  document.head.appendChild(link);
+});
+</script>
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#09090b;--bg2:#18181b;--bg3:#27272a;
+    --border:#3f3f46;--border2:#52525b;
+    --text:#f4f4f5;--text2:#a1a1aa;--text3:#71717a;
+    --amber:#f59e0b;--amber2:#fbbf24;--amber-bg:rgba(245,158,11,0.15);
+    --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.15);
+    --green:#10b981;--green-bg:rgba(16,185,129,0.15);
+    --violet:#8b5cf6;--violet-bg:rgba(139,92,246,0.15);
+    --rose:#f43f5e;--rose-bg:rgba(244,63,94,0.15);
+    --cyan:#06b6d4;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Georgia',serif;overflow-x:hidden}
+  body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;min-height:100dvh}
+
+  /* Header */
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px 0;position:sticky;top:0;z-index:100}
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .app-title{font-size:18px;font-weight:700;letter-spacing:-0.5px}
+  .app-sub{font-size:11px;color:var(--text3);margin-top:1px}
+  .fire-btn{font-size:22px;background:none;border:none;cursor:pointer;padding:4px}
+
+  /* Week strip */
+  .week-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+  .week-strip::-webkit-scrollbar{display:none}
+  .day-pill{flex:1;min-width:42px;max-width:52px;border:none;border-radius:12px;padding:7px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;background:var(--bg3);color:var(--text2);font-family:inherit;transition:all .15s}
+  .day-pill.active{background:var(--amber);color:#09090b;font-weight:700}
+  .day-pill.today-pill{background:var(--bg3);outline:2px solid var(--amber);color:var(--amber)}
+  .day-pill .day-name{font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+  .day-pill .day-num{font-size:15px;font-weight:600}
+  .today-dot{width:5px;height:5px;border-radius:50%;background:var(--amber);margin-top:1px}
+
+  /* Tabs */
+  .tabs{display:flex;gap:4px;padding:12px 16px 8px;background:var(--bg)}
+  .tab-btn{flex:1;padding:9px 4px;border:none;border-radius:12px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;background:var(--bg2);color:var(--text2);transition:all .15s}
+  .tab-btn.active{background:var(--amber);color:#09090b;font-weight:700}
+
+  /* Main content */
+  .content{flex:1;overflow-y:auto;padding:0 16px 100px;scrollbar-width:none}
+  .content::-webkit-scrollbar{display:none}
+
+  /* Cards */
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px}
+  .card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px}
+
+  /* Date info card */
+  .date-row{display:flex;align-items:flex-start;justify-content:space-between}
+  .date-name{font-size:16px;font-weight:600}
+  .phase-label{font-size:11px;margin-top:3px;font-weight:500}
+  .progress-big{font-size:26px;font-weight:700;color:var(--amber);text-align:right}
+  .progress-sub{font-size:11px;color:var(--text3);text-align:right}
+  .progress-bar{height:6px;background:var(--bg3);border-radius:4px;margin-top:10px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber2));border-radius:4px;transition:width .5s ease}
+
+  /* Subject cards */
+  .subject-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .sub-card{border-radius:14px;padding:10px 8px;border:1px solid transparent}
+  .sub-card.physics{background:var(--blue-bg);border-color:rgba(59,130,246,.3)}
+  .sub-card.chemistry{background:var(--green-bg);border-color:rgba(16,185,129,.3)}
+  .sub-card.maths{background:var(--amber-bg);border-color:rgba(245,158,11,.3)}
+  .sub-icon{font-size:18px}
+  .sub-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+  .sub-name.physics{color:var(--blue)}
+  .sub-name.chemistry{color:var(--green)}
+  .sub-name.maths{color:var(--amber)}
+  .sub-chapter{font-size:10px;color:var(--text2);margin-top:3px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* Mood */
+  .mood-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .mood-btn{font-size:22px;background:none;border:none;padding:4px 6px;border-radius:8px;cursor:pointer;transition:transform .15s}
+  .mood-btn.active{background:var(--amber-bg);transform:scale(1.25)}
+  .mood-text{font-size:11px;color:var(--text2)}
+
+  /* Schedule slots */
+  .slot{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:border-color .15s;border-left-width:4px}
+  .slot.break{cursor:default;opacity:.5;border-left-color:var(--border2)}
+  .slot.theory{border-left-color:var(--blue)}
+  .slot.notes-type{border-left-color:var(--violet)}
+  .slot.problems{border-left-color:var(--amber)}
+  .slot.dpp{border-left-color:var(--rose)}
+  .slot.revision{border-left-color:var(--green)}
+  .slot.done{opacity:.55}
+  .slot-icon{font-size:20px;min-width:28px;text-align:center}
+  .slot-body{flex:1;min-width:0}
+  .slot-time{font-size:10px;color:var(--text3);font-family:monospace}
+  .slot-badges{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .subject-badge{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:99px;color:#09090b}
+  .subject-badge.physics{background:var(--blue)}
+  .subject-badge.chemistry{background:var(--green)}
+  .subject-badge.maths{background:var(--amber)}
+  .slot-label{font-size:13px;font-weight:600;margin-top:1px}
+  .slot-chapter{font-size:11px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .check-circle{width:24px;height:24px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;min-width:24px;transition:all .2s;font-size:12px}
+  .check-circle.checked{background:var(--green);border-color:var(--green);color:white}
+
+  /* Motivation banner */
+  .motivation-box{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--amber2);line-height:1.5}
+
+  /* Week tab */
+  .week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .week-plan-bar{height:5px;background:var(--bg3);border-radius:4px;margin-top:8px;overflow:hidden}
+  .week-plan-fill{height:100%;background:var(--amber);border-radius:4px}
+  .week-sub-card{border-radius:16px;padding:14px;margin-bottom:10px;border:1px solid transparent}
+  .week-sub-card.physics{background:var(--blue-bg);border-color:rgba(59,130,246,.25)}
+  .week-sub-card.chemistry{background:var(--green-bg);border-color:rgba(16,185,129,.25)}
+  .week-sub-card.maths{background:var(--amber-bg);border-color:rgba(245,158,11,.25)}
+  .week-sub-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .week-sub-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  .week-sub-title.physics{color:var(--blue)}
+  .week-sub-title.chemistry{color:var(--green)}
+  .week-sub-title.maths{color:var(--amber)}
+  .week-chapter-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px}
+  .week-task{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text2);margin-bottom:4px}
+  .tip-box{background:var(--violet-bg);border:1px solid rgba(139,92,246,.3);border-radius:14px;padding:14px}
+  .tip-label{font-size:11px;font-weight:700;color:var(--violet);margin-bottom:5px}
+  .tip-text{font-size:12px;color:var(--text2);line-height:1.6}
+
+  /* Notes tab */
+  .note-input-row{display:flex;gap:8px}
+  .note-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--text);font-family:inherit;outline:none;transition:border-color .2s}
+  .note-input:focus{border-color:var(--amber)}
+  .add-btn{background:var(--amber);color:#09090b;border:none;border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+  .note-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
+  .note-pin{color:var(--amber);margin-top:1px}
+  .note-text{flex:1;font-size:13px;color:var(--text2)}
+  .note-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 4px}
+  .note-del:hover{color:var(--rose)}
+  .prev-notes-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin:16px 0 8px}
+  .prev-note-card{background:rgba(24,24,27,.5);border:1px solid rgba(63,63,70,.4);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  .prev-note-date{font-size:10px;color:var(--text3);margin-bottom:4px}
+  .prev-note-item{font-size:11px;color:var(--text2);margin-bottom:2px}
+
+  /* Empty state */
+  .empty{text-align:center;padding:40px 20px;color:var(--text3)}
+  .empty-icon{font-size:40px;margin-bottom:8px}
+  .empty-text{font-size:13px}
+
+  /* Footer quote */
+  .footer-quote{text-align:center;font-size:11px;color:var(--bg3);padding:16px 0 8px}
+
+  /* Out of range */
+  .out-range{text-align:center;padding:48px 20px;color:var(--text3)}
+
+  /* Install prompt */
+  .install-banner{display:none;background:var(--amber-bg);border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:12px 14px;margin-bottom:12px;align-items:center;gap:10px}
+  .install-banner.show{display:flex}
+  .install-txt{flex:1;font-size:12px;color:var(--amber2)}
+  .install-btn{background:var(--amber);color:#09090b;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+  @media (prefers-color-scheme: light){
+    :root{--bg:#f9fafb;--bg2:#ffffff;--bg3:#f3f4f6;--border:#e5e7eb;--border2:#d1d5db;--text:#111827;--text2:#4b5563;--text3:#9ca3af}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="app-title">⚡ JEE Planner</div>
+      <div class="app-sub">Main + Advanced 2026–27</div>
+    </div>
+    <button class="fire-btn" onclick="toggleMotivation()" title="Motivation">🔥</button>
+  </div>
+  <div class="week-strip" id="weekStrip"></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('today',this)">📅 Today</button>
+  <button class="tab-btn" onclick="switchTab('week',this)">📚 Week</button>
+  <button class="tab-btn" onclick="switchTab('notes',this)">📝 Notes</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- INSTALL BANNER -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-txt">📲 Install as app — Home Screen pe add karo!</div>
+    <button class="install-btn" id="installBtn" onclick="installPWA()">Install</button>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div id="tab-today">
+    <div id="motivationBox" style="display:none" class="motivation-box"></div>
+    <div class="card" id="dateCard"></div>
+    <div class="subject-grid" id="subjectGrid"></div>
+    <div class="card-sm">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Aaj ka mood? 🎭</div>
+      <div class="mood-row" id="moodRow">
+        <button class="mood-btn" onclick="setMood('😴',this)">😴</button>
+        <button class="mood-btn" onclick="setMood('😐',this)">😐</button>
+        <button class="mood-btn" onclick="setMood('🙂',this)">🙂</button>
+        <button class="mood-btn" onclick="setMood('😤',this)">😤</button>
+        <button class="mood-btn" onclick="setMood('🔥',this)">🔥</button>
+        <span class="mood-text" id="moodText"></span>
+      </div>
+    </div>
+    <div id="scheduleSlots"></div>
+    <div class="footer-quote">"Success is the sum of small efforts, repeated day in and day out." 🎯</div>
+  </div>
+
+  <!-- WEEK TAB -->
+  <div id="tab-week" style="display:none">
+    <div id="weekContent"></div>
+  </div>
+
+  <!-- NOTES TAB -->
+  <div id="tab-notes" style="display:none">
+    <div class="card">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px" id="noteDateLabel"></div>
+      <div class="note-input-row">
+        <input class="note-input" id="noteInput" placeholder="Koi doubt, concept, ya reminder..." onkeydown="if(event.key==='Enter')addNote()"/>
+        <button class="add-btn" onclick="addNote()">Add</button>
+      </div>
+    </div>
+    <div id="notesList"></div>
+    <div id="prevNotes"></div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const STUDY_PLAN = {
+  1:{dates:"20 Jun – 26 Jun 2026",physics:"Units & Measurements",chemistry:"Some Basic Concepts of Chemistry",maths:"Sets, Relations & Functions"},
+  2:{dates:"27 Jun – 03 Jul 2026",physics:"Motion in a Straight Line",chemistry:"Structure of Atom",maths:"Trigonometric Functions (Part 1/2)"},
+  3:{dates:"04 Jul – 10 Jul 2026",physics:"Motion in a Plane (Vectors)",chemistry:"Classification of Elements & Periodicity",maths:"Trigonometric Functions (Part 2/2)"},
+  4:{dates:"11 Jul – 17 Jul 2026",physics:"Laws of Motion",chemistry:"Chemical Bonding & Molecular Structure (Part 1/2)",maths:"Complex Numbers & Quadratic Equations (Part 1/2)"},
+  5:{dates:"18 Jul – 24 Jul 2026",physics:"Work, Energy & Power",chemistry:"Chemical Bonding & Molecular Structure (Part 2/2)",maths:"Complex Numbers & Quadratic Equations (Part 2/2)"},
+  6:{dates:"25 Jul – 31 Jul 2026",physics:"System of Particles & Rotational Motion (Part 1/2)",chemistry:"States of Matter (Gases & Liquids)",maths:"Linear Inequalities"},
+  7:{dates:"01 Aug – 07 Aug 2026",physics:"System of Particles & Rotational Motion (Part 2/2)",chemistry:"Thermodynamics (Chem)",maths:"Permutations & Combinations"},
+  8:{dates:"08 Aug – 14 Aug 2026",physics:"Gravitation",chemistry:"Equilibrium (Part 1/2)",maths:"Binomial Theorem"},
+  9:{dates:"15 Aug – 21 Aug 2026",physics:"Mechanical Properties of Solids",chemistry:"Equilibrium (Part 2/2)",maths:"Sequences & Series (AP/GP) (Part 1/2)"},
+  10:{dates:"22 Aug – 28 Aug 2026",physics:"Mechanical Properties of Fluids",chemistry:"Redox Reactions",maths:"Sequences & Series (AP/GP) (Part 2/2)"},
+  11:{dates:"29 Aug – 04 Sep 2026",physics:"Thermal Properties of Matter",chemistry:"Hydrogen",maths:"Straight Lines"},
+  12:{dates:"05 Sep – 11 Sep 2026",physics:"Thermodynamics",chemistry:"The s-Block Elements",maths:"Conic Sections (Part 1/2)"},
+  13:{dates:"12 Sep – 18 Sep 2026",physics:"Kinetic Theory of Gases",chemistry:"The p-Block Elements (Gr 13-14)",maths:"Conic Sections (Part 2/2)"},
+  14:{dates:"19 Sep – 25 Sep 2026",physics:"Oscillations (SHM) (Part 1/2)",chemistry:"Organic Chemistry – Basic Principles (Part 1/2)",maths:"Introduction to 3D Geometry"},
+  15:{dates:"26 Sep – 02 Oct 2026",physics:"Oscillations (SHM) (Part 2/2)",chemistry:"Organic Chemistry – Basic Principles (Part 2/2)",maths:"Limits & Derivatives (Part 1/2)"},
+  16:{dates:"03 Oct – 09 Oct 2026",physics:"Waves (Part 1/2)",chemistry:"Hydrocarbons (Part 1/2)",maths:"Limits & Derivatives (Part 2/2)"},
+  17:{dates:"10 Oct – 16 Oct 2026",physics:"Waves (Part 2/2)",chemistry:"Hydrocarbons (Part 2/2)",maths:"Statistics & Probability (Basic)"},
+  18:{dates:"17 Oct – 23 Oct 2026",physics:"Electric Charges & Fields (Part 1/2)",chemistry:"Environmental Chemistry",maths:"Relations & Functions (Inverse Trigo)"},
+  19:{dates:"24 Oct – 30 Oct 2026",physics:"Electric Charges & Fields (Part 2/2)",chemistry:"The Solid State",maths:"Matrices"},
+  20:{dates:"31 Oct – 06 Nov 2026",physics:"Electrostatic Potential & Capacitance (Part 1/2)",chemistry:"Solutions",maths:"Determinants"},
+  21:{dates:"07 Nov – 13 Nov 2026",physics:"Electrostatic Potential & Capacitance (Part 2/2)",chemistry:"Electrochemistry (Part 1/2)",maths:"Continuity & Differentiability (Part 1/2)"},
+  22:{dates:"14 Nov – 20 Nov 2026",physics:"Current Electricity (Part 1/2)",chemistry:"Electrochemistry (Part 2/2)",maths:"Continuity & Differentiability (Part 2/2)"},
+  23:{dates:"21 Nov – 27 Nov 2026",physics:"Current Electricity (Part 2/2)",chemistry:"Chemical Kinetics (Part 1/2)",maths:"Applications of Derivatives (Part 1/2)"},
+  24:{dates:"28 Nov – 04 Dec 2026",physics:"Moving Charges & Magnetism (Part 1/2)",chemistry:"Chemical Kinetics (Part 2/2)",maths:"Applications of Derivatives (Part 2/2)"},
+  25:{dates:"05 Dec – 11 Dec 2026",physics:"Moving Charges & Magnetism (Part 2/2)",chemistry:"Surface Chemistry",maths:"Integrals (Indefinite) (Part 1/2)"},
+  26:{dates:"12 Dec – 18 Dec 2026",physics:"Magnetism & Matter",chemistry:"General Principles of Isolation of Elements",maths:"Integrals (Indefinite) (Part 2/2)"},
+  27:{dates:"19 Dec – 25 Dec 2026",physics:"Electromagnetic Induction (Part 1/2)",chemistry:"The p-Block Elements (Gr 15-18)",maths:"Integrals (Definite) & Applications (Part 1/2)"},
+  28:{dates:"26 Dec – 01 Jan 2027",physics:"Electromagnetic Induction (Part 2/2)",chemistry:"The d & f Block Elements",maths:"Integrals (Definite) & Applications (Part 2/2)"},
+  29:{dates:"02 Jan – 08 Jan 2027",physics:"Alternating Current",chemistry:"Coordination Compounds (Part 1/2)",maths:"Differential Equations (Part 1/2)"},
+  30:{dates:"09 Jan – 15 Jan 2027",physics:"Electromagnetic Waves",chemistry:"Coordination Compounds (Part 2/2)",maths:"Differential Equations (Part 2/2)"},
+  31:{dates:"16 Jan – 22 Jan 2027",physics:"Ray Optics & Optical Instruments (Part 1/2)",chemistry:"Haloalkanes & Haloarenes",maths:"Vector Algebra"},
+  32:{dates:"23 Jan – 29 Jan 2027",physics:"Ray Optics & Optical Instruments (Part 2/2)",chemistry:"Alcohols, Phenols & Ethers (Part 1/2)",maths:"Three Dimensional Geometry (Part 1/2)"},
+  33:{dates:"30 Jan – 05 Feb 2027",physics:"Wave Optics",chemistry:"Alcohols, Phenols & Ethers (Part 2/2)",maths:"Three Dimensional Geometry (Part 2/2)"},
+  34:{dates:"06 Feb – 12 Feb 2027",physics:"Dual Nature of Radiation & Matter",chemistry:"Aldehydes, Ketones & Carboxylic Acids (Part 1/2)",maths:"Linear Programming"},
+  35:{dates:"13 Feb – 19 Feb 2027",physics:"Atoms",chemistry:"Aldehydes, Ketones & Carboxylic Acids (Part 2/2)",maths:"Probability (Advanced) (Part 1/2)"},
+  36:{dates:"20 Feb – 26 Feb 2027",physics:"Nuclei",chemistry:"Amines",maths:"Probability (Advanced) (Part 2/2)"},
+  37:{dates:"27 Feb – 05 Mar 2027",physics:"Semiconductor Electronics",chemistry:"Biomolecules & Polymers",maths:"Review / Buffer"}
+};
+
+const DAY_SCHEDULE = [
+  {time:"6:00 – 7:30 AM", label:"Theory",         icon:"📖", type:"theory",    sk:0},
+  {time:"7:30 – 8:00 AM", label:"Break",           icon:"☕", type:"break",     sk:null},
+  {time:"8:00 – 9:30 AM", label:"NCERT + Notes",   icon:"✍️", type:"notes-type",sk:0},
+  {time:"4:00 – 5:30 PM", label:"Problems",        icon:"🧮", type:"problems",  sk:0},
+  {time:"5:30 – 6:00 PM", label:"Break",           icon:"🌿", type:"break",     sk:null},
+  {time:"6:00 – 7:30 PM", label:"Theory + Notes",  icon:"📝", type:"theory",    sk:1},
+  {time:"8:00 – 9:00 PM", label:"DPP / PYQs",      icon:"🎯", type:"dpp",       sk:2},
+  {time:"9:00 – 9:30 PM", label:"Revision",        icon:"🔁", type:"revision",  sk:null},
+];
+
+const DAY_SUBJECTS = [
+  ["physics","chemistry","maths"],
+  ["chemistry","maths","physics"],
+  ["maths","physics","chemistry"],
+  ["physics","chemistry","maths"],
+  ["chemistry","maths","physics"],
+  ["maths","physics","chemistry"],
+  ["physics","chemistry","maths"],
+];
+
+const SUB_ICONS = {physics:"⚡",chemistry:"🧪",maths:"∑"};
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MOTIVATIONS = [
+  "Consistency beats intensity. Ek din ka champion mat bano — 365 din ka warrior bano! 🔥",
+  "JEE Advanced mein wahi jaata hai jo roz thoda thoda karta hai. Tu bhi karega! 💪",
+  "Physics ke formulas, Chemistry ke reactions, Maths ke tricks — sab teri fingers pe hone chahiye! ✨",
+  "Hard days are the best days — kyunki baad mein inhi ke baare mein bataoge. 🏆",
+  "Har slot complete karna ek step aage hai. Keep going! 🚀",
+  "Neend ko jeeto, distraction ko harao — IIT tujhe bula raha hai! 🎯",
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let selectedDate = new Date();
+let completedSlots = {};
+let notes = {};
+let currentMood = null;
+let activeTab = 'today';
+let deferredInstallPrompt = null;
+
+try { completedSlots = JSON.parse(localStorage.getItem('jee_completed')||'{}'); } catch{}
+try { notes = JSON.parse(localStorage.getItem('jee_notes')||'{}'); } catch{}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function getWeekNum(date) {
+  const start = new Date("2026-06-20");
+  const diff = date - start;
+  const days = Math.floor(diff / 86400000);
+  if (days < 0) return null;
+  const w = Math.floor(days / 7) + 1;
+  return w > 37 ? null : w;
+}
+function getPhase(w) {
+  if (w <= 16) return {label:"Phase 1",sub:"Class 11 Foundation",color:"var(--violet)"};
+  if (w <= 33) return {label:"Phase 2",sub:"Class 12 Core JEE",color:"var(--cyan)"};
+  return {label:"Phase 3",sub:"Completion & Integration",color:"var(--rose)"};
+}
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+function slotKey(d, i) { return `${dateKey(d)}_${i}`; }
+function saveCompleted() { try{localStorage.setItem('jee_completed',JSON.stringify(completedSlots));}catch{} }
+function saveNotes() { try{localStorage.setItem('jee_notes',JSON.stringify(notes));}catch{} }
+
+// ── RENDER WEEK STRIP ─────────────────────────────────────────────────────────
+function renderWeekStrip() {
+  const strip = document.getElementById('weekStrip');
+  const today = new Date();
+  const dow = selectedDate.getDay();
+  strip.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - dow + i);
+    const isSelected = d.toDateString() === selectedDate.toDateString();
+    const isToday = d.toDateString() === today.toDateString();
+    const btn = document.createElement('button');
+    btn.className = 'day-pill' + (isSelected?' active':(isToday?' today-pill':''));
+    btn.innerHTML = `<span class="day-name">${DAY_SHORT[d.getDay()]}</span><span class="day-num">${d.getDate()}</span>${isToday&&!isSelected?'<span class="today-dot"></span>':''}`;
+    btn.onclick = () => { selectedDate = new Date(d); renderAll(); };
+    strip.appendChild(btn);
+  }
+}
+
+// ── RENDER TODAY TAB ──────────────────────────────────────────────────────────
+function renderToday() {
+  const dk = dateKey(selectedDate);
+  const weekNum = getWeekNum(selectedDate);
+  const weekData = weekNum ? STUDY_PLAN[weekNum] : null;
+  const subOrder = DAY_SUBJECTS[selectedDate.getDay()];
+  const totalSlots = DAY_SCHEDULE.filter(s=>s.type!=='break').length;
+  const doneCount = DAY_SCHEDULE.filter((s,i)=>s.type!=='break'&&completedSlots[slotKey(selectedDate,i)]).length;
+  const pct = Math.round((doneCount/totalSlots)*100);
+
+  // Date card
+  let phaseHtml = '';
+  if (weekNum) {
+    const ph = getPhase(weekNum);
+    phaseHtml = `<div class="phase-label" style="color:${ph.color}">${ph.label} · ${ph.sub} · Week ${weekNum}</div>`;
+  }
+  document.getElementById('dateCard').innerHTML = `
+    <div class="date-row">
+      <div>
+        <div class="date-name">${DAY_NAMES[selectedDate.getDay()]}, ${selectedDate.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
+        ${phaseHtml || '<div class="phase-label" style="color:var(--text3)">Plan range ke bahar</div>'}
+      </div>
+      <div>
+        <div class="progress-big">${pct}%</div>
+        <div class="progress-sub">${doneCount}/${totalSlots} done</div>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  `;
+
+  // Subject cards
+  const grid = document.getElementById('subjectGrid');
+  if (weekData) {
+    grid.innerHTML = subOrder.map(sub => `
+      <div class="sub-card ${sub}">
+        <div class="sub-icon">${SUB_ICONS[sub]}</div>
+        <div class="sub-name ${sub}">${sub}</div>
+        <div class="sub-chapter">${weekData[sub]}</div>
+      </div>
+    `).join('');
+    grid.style.display = 'grid';
+  } else {
+    grid.style.display = 'none';
+  }
+
+  // Schedule slots
+  const slots = document.getElementById('scheduleSlots');
+  slots.innerHTML = DAY_SCHEDULE.map((slot, i) => {
+    const done = completedSlots[slotKey(selectedDate, i)];
+    const isBreak = slot.type === 'break';
+    const sub = slot.sk !== null ? subOrder[slot.sk] : null;
+    const chapter = sub && weekData ? weekData[sub] : null;
+    return `
+      <div class="slot ${slot.type}${done?' done':''}" onclick="${!isBreak?`toggleSlot(${i})`:''}">
+        <div class="slot-icon">${slot.icon}</div>
+        <div class="slot-body">
+          <div class="slot-badges">
+            <span style="font-size:10px;color:var(--text3);font-family:monospace">${slot.time}</span>
+            ${sub?`<span class="subject-badge ${sub}">${sub}</span>`:''}
+          </div>
+          <div class="slot-label">${slot.label}</div>
+          ${chapter?`<div class="slot-chapter">${chapter}</div>`:''}
+        </div>
+        ${!isBreak?`<div class="check-circle${done?' checked':''}">${done?'✓':''}</div>`:''}
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleSlot(i) {
+  const key = slotKey(selectedDate, i);
+  completedSlots[key] = !completedSlots[key];
+  saveCompleted();
+  renderToday();
+}
+
+// ── RENDER WEEK TAB ───────────────────────────────────────────────────────────
+function renderWeek() {
+  const weekNum = getWeekNum(selectedDate);
+  const weekData = weekNum ? STUDY_PLAN[weekNum] : null;
+  const el = document.getElementById('weekContent');
+  if (!weekData) {
+    el.innerHTML = `<div class="out-range"><div style="font-size:40px;margin-bottom:8px">📅</div><div>Yeh date plan range ke bahar hai.</div><div style="font-size:12px;margin-top:4px">Plan starts 20 Jun 2026.</div></div>`;
+    return;
+  }
+  const ph = getPhase(weekNum);
+  const planPct = Math.round((weekNum/37)*100);
+  const tasks = [
+    {icon:"📖",text:"Mon/Thu – Theory reading (NCERT)"},
+    {icon:"✍️",text:"Tue/Fri – Notes + Examples"},
+    {icon:"🧮",text:"Wed/Sat – Problem solving (30–40 Qs)"},
+    {icon:"🎯",text:"Daily evening – DPP / PYQs"},
+    {icon:"🔁",text:"Weekend – Revision + Formula sheet"},
+  ];
+  el.innerHTML = `
+    <div class="card">
+      <div class="week-header">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${ph.color}">${ph.label}</span>
+        <span style="font-size:11px;color:var(--text3)">Week ${weekNum} of 37</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;margin-top:2px;color:var(--text2)">${weekData.dates}</div>
+      <div class="week-plan-bar"><div class="week-plan-fill" style="width:${planPct}%"></div></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${planPct}% of full plan completed</div>
+    </div>
+    ${['physics','chemistry','maths'].map(sub=>`
+      <div class="week-sub-card ${sub}">
+        <div class="week-sub-header">
+          <span style="font-size:22px">${SUB_ICONS[sub]}</span>
+          <span class="week-sub-title ${sub}">${sub}</span>
+        </div>
+        <div class="week-chapter-name">${weekData[sub]}</div>
+        ${tasks.map(t=>`<div class="week-task"><span>${t.icon}</span><span>${t.text}</span></div>`).join('')}
+      </div>
+    `).join('')}
+    <div class="tip-box">
+      <div class="tip-label">💡 This Week's Tip</div>
+      <div class="tip-text">Har chapter ke baad ek 1-page handwritten formula sheet banao. Theory padhne ke baad same week mein NCERT + 30–40 questions zaroor solve karo. Har 2 weeks baad pichle chapters ke formulas 15 min review karo.</div>
+    </div>
+  `;
+}
+
+// ── RENDER NOTES TAB ──────────────────────────────────────────────────────────
+function renderNotes() {
+  const dk = dateKey(selectedDate);
+  document.getElementById('noteDateLabel').textContent =
+    selectedDate.toLocaleDateString('en-IN',{day:'numeric',month:'long'}) + ' ke notes';
+
+  const list = document.getElementById('notesList');
+  const dayNotes = notes[dk] || [];
+  if (dayNotes.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">Koi notes nahi. Koi doubt likho!</div></div>`;
+  } else {
+    list.innerHTML = dayNotes.map((n,i)=>`
+      <div class="note-item">
+        <span class="note-pin">📌</span>
+        <span class="note-text">${n}</span>
+        <button class="note-del" onclick="deleteNote('${dk}',${i})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  // Previous days
+  const prev = document.getElementById('prevNotes');
+  const prevEntries = Object.entries(notes).filter(([k,v])=>k!==dk&&v&&v.length>0).sort(([a],[b])=>b.localeCompare(a)).slice(0,5);
+  if (prevEntries.length > 0) {
+    prev.innerHTML = `<div class="prev-notes-title">Previous Notes</div>` +
+      prevEntries.map(([k,v])=>`
+        <div class="prev-note-card">
+          <div class="prev-note-date">${new Date(k).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+          ${v.map(n=>`<div class="prev-note-item">• ${n}</div>`).join('')}
+        </div>
+      `).join('');
+  } else {
+    prev.innerHTML = '';
+  }
+}
+
+function addNote() {
+  const input = document.getElementById('noteInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const dk = dateKey(selectedDate);
+  if (!notes[dk]) notes[dk] = [];
+  notes[dk].push(val);
+  input.value = '';
+  saveNotes();
+  renderNotes();
+}
+
+function deleteNote(dk, i) {
+  notes[dk].splice(i, 1);
+  if (notes[dk].length === 0) delete notes[dk];
+  saveNotes();
+  renderNotes();
+}
+
+// ── MOOD ──────────────────────────────────────────────────────────────────────
+function setMood(m, btn) {
+  currentMood = m;
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const texts = {'😴':'Rest karo, phir padhna!','😐':'Thoda warm up karo!','🙂':'Keep going!','😤':'Gusse ko energy mein badaloo!','🔥':'Beast mode ON! 🏆'};
+  document.getElementById('moodText').textContent = texts[m] || '';
+}
+
+// ── MOTIVATION ────────────────────────────────────────────────────────────────
+function toggleMotivation() {
+  const box = document.getElementById('motivationBox');
+  if (box.style.display === 'none') {
+    box.textContent = MOTIVATIONS[Math.floor(Math.random()*MOTIVATIONS.length)];
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['today','week','notes'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===tab?'block':'none';
+  });
+  if (tab==='week') renderWeek();
+  if (tab==='notes') renderNotes();
+}
+
+// ── PWA INSTALL ───────────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+function installPWA() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(()=>{ document.getElementById('installBanner').classList.remove('show'); });
+  }
+}
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// ── SERVICE WORKER ────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'jee-planner-v1';
+    self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/']))));
+    self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+  `;
+  const swBlob = new Blob([swCode], {type:'text/javascript'});
+  const swURL = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swURL).catch(()=>{});
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+function renderAll() {
+  renderWeekStrip();
+  renderToday();
+  if (activeTab === 'week') renderWeek();
+  if (activeTab === 'notes') renderNotes();
+}
+
+renderAll();
+</script>
+</body>
+</html>
